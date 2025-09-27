@@ -5,7 +5,7 @@ import MCPConnectivityIllustration from "./bento/mcp-connectivity-illustration" 
 import EasyDeployment from "./bento/easy-deployment"
 import ParallelCodingAgents from "./bento/parallel-agents" // Updated import
 
-const BentoCard = ({ title, description, Component }) => (
+const BentoCard = ({ title, description, Component }: { title: string, description: string, Component: React.ComponentType }) => (
   <div className="overflow-hidden rounded-2xl border border-white/20 flex flex-col justify-start items-start relative">
     {/* Background with blur effect */}
     <div
@@ -74,7 +74,7 @@ export function BentoSection() {
         <div className="self-stretch py-8 md:py-14 flex flex-col justify-center items-center gap-2 z-10">
           <div className="flex flex-col justify-start items-center gap-4">
             <h2 className="w-full max-w-[655px] text-center text-foreground text-4xl md:text-6xl font-semibold leading-tight md:leading-[66px]">
-              Empower Your Workflow with AI
+              Empower  Your Web3 Workflow with AI
             </h2>
             <p className="w-full max-w-[600px] text-center text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">
               Ask your AI Agent for real-time collaboration, seamless integrations, and actionable insights to

@@ -161,7 +161,7 @@ const RealtimeCodingPreviews: React.FC = () => {
               background: "var(--realtime-primary-color)",
               color: "var(--realtime-text-preview)",
               border: "none",
-              cursor: "pointer",
+              cursor: "FlowZmith",
               fontWeight: 500,
               whiteSpace: "nowrap",
               transition: "all 0.2s ease",
