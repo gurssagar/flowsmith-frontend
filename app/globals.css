@@ -50,3 +50,120 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Scrollbar Styles */
+@layer utilities {
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(210 11% 7%); /* Dark background - no white */
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(240 2% 25%); /* Dark gray - no white */
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(240 2% 35%); /* Slightly lighter dark gray */
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: hsl(240 2% 45%); /* Even lighter dark gray */
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: hsl(210 11% 7%); /* Dark background - no white */
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(240 2% 25%) hsl(210 11% 7%); /* Dark colors - no white */
+  }
+
+  /* Custom scrollbar for specific elements */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(240 2% 25%) hsl(210 11% 7%); /* Dark colors - no white */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(210 11% 7%); /* Dark background - no white */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(240 2% 25%); /* Dark gray - no white */
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(240 2% 35%); /* Slightly lighter dark gray */
+  }
+
+  /* Thin scrollbar variant */
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(240 2% 30%) hsl(210 11% 7%); /* Dark colors - no white */
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: hsl(210 11% 7%); /* Dark background - no white */
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(240 2% 30%); /* Dark gray - no white */
+    border-radius: 2px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(240 2% 40%); /* Slightly lighter dark gray */
+  }
+
+  /* Hidden scrollbar variant */
+  .hidden-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hidden-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Gradient scrollbar variant */
+  .gradient-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .gradient-scrollbar::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, hsl(210 11% 7%), hsl(210 11% 9%)); /* Dark gradient - no white */
+    border-radius: 3px;
+  }
+
+  .gradient-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(240 2% 25%), hsl(240 2% 35%)); /* Dark gray gradient - no white */
+    border-radius: 3px;
+    transition: all 0.2s ease;
+  }
+
+  .gradient-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(240 2% 35%), hsl(240 2% 45%)); /* Slightly lighter dark gradient */
+  }
+}

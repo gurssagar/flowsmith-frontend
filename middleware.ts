@@ -5,8 +5,8 @@ export default auth((req) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
 
-  // Protect dashboard routes
-  if (nextUrl.pathname.startsWith("/dashboard")) {
+  // Protect dashboard and chat routes
+  if (nextUrl.pathname.startsWith("/dashboard") || nextUrl.pathname.startsWith("/chat")) {
     if (isLoggedIn) return NextResponse.next()
     return NextResponse.redirect(new URL("/login", nextUrl))
   }
@@ -15,5 +15,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/dashboard/:path*"]
+  matcher: ["/dashboard/:path*", "/chat/:path*"]
 }
