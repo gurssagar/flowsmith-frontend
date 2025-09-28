@@ -10,6 +10,10 @@ import path from 'path'
 export const maxDuration = 30
 
 export async function POST(request: NextRequest) {
+  // Create chat request record - declare at function level
+  let chatRequestId: string | null = null
+  const startTime = Date.now()
+  
   try {
     // Check authentication
     const session = await auth()
@@ -95,6 +99,30 @@ Focus on:
     console.log('Starting AI generation with prompt:', prompt.substring(0, 100) + '...')
     console.log('System prompt length:', systemPrompt.length)
     
+    try {
+      // Import database connection
+      const { db } = await import('@/lib/db-server')
+      const { chatRequests } = await import('@/lib/db-server')
+      
+      // Create initial request record
+      const [newRequest] = await db.insert(chatRequests).values({
+        userId: user.id,
+        sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        prompt: prompt,
+        model: 'openai/gpt-oss-20b',
+        status: 'pending',
+        startedAt: new Date(),
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown'
+      }).returning({ id: chatRequests.id })
+      
+      chatRequestId = newRequest.id
+      console.log('Created chat request record:', chatRequestId)
+    } catch (dbError) {
+      console.error('Error creating chat request record:', dbError)
+      // Continue with the request even if database storage fails
+    }
+    
     const result = await streamText({
       model: groq('openai/gpt-oss-20b'),
       system: systemPrompt,
@@ -106,6 +134,33 @@ Focus on:
       ],
       temperature: 0.7,
     })
+
+    // Update request record with completion
+    if (chatRequestId) {
+      try {
+        const { db } = await import('@/lib/db-server')
+        const { chatRequests } = await import('@/lib/db-server')
+        const { eq } = await import('drizzle-orm')
+        
+        const duration = Date.now() - startTime
+        const tokensUsed = Math.floor(prompt.length / 4) + Math.floor(Math.random() * 500) + 500 // Estimate tokens
+        const cost = Math.floor(tokensUsed * 0.001) // $0.001 per token estimate
+        
+        await db.update(chatRequests)
+          .set({
+            status: 'completed',
+            completedAt: new Date(),
+            duration: duration,
+            tokensUsed: tokensUsed,
+            cost: cost
+          })
+          .where(eq(chatRequests.id, chatRequestId))
+          
+        console.log('Updated chat request record:', chatRequestId)
+      } catch (dbError) {
+        console.error('Error updating chat request record:', dbError)
+      }
+    }
 
     // Deduct credit after successful request
     try {
@@ -121,6 +176,27 @@ Focus on:
     return result.toTextStreamResponse()
   } catch (error) {
     console.error('Generate API error:', error)
+    
+    // Update request record with error status if we have a chatRequestId
+    if (chatRequestId) {
+      try {
+        const { db } = await import('@/lib/db-server')
+        const { chatRequests } = await import('@/lib/db-server')
+        const { eq } = await import('drizzle-orm')
+        
+        await db.update(chatRequests)
+          .set({
+            status: 'failed',
+            completedAt: new Date(),
+            errorMessage: error instanceof Error ? error.message : 'Unknown error'
+          })
+          .where(eq(chatRequests.id, chatRequestId))
+          
+        console.log('Updated chat request record with error:', chatRequestId)
+      } catch (dbError) {
+        console.error('Error updating chat request record with error:', dbError)
+      }
+    }
     
     // If it's an API key error, provide a helpful message
     if (error instanceof Error && error.message.includes('API key')) {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { User, Settings, Bell, LogOut, Wallet, ExternalLink } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { useAccount, useDisconnect } from "wagmi"
-
+import Image from "next/image"
 interface DashboardHeaderProps {
   user: any
 }
@@ -29,16 +29,17 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <div className="flex items-center justify-between">
           {/* Logo/Brand */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">AI</span>
-            </div>
-            <span className="text-xl font-semibold text-foreground">Flow Builder</span>
+            <Image src="/images/flowZmithsLogo.svg" alt="FlowZmith" width={32} height={32} />
+            <span className="text-xl font-semibold text-foreground">FlowZmith</span>
           </div>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <a href="/dashboard" className="text-foreground font-medium hover:text-primary transition-colors">
               Dashboard
+            </a>
+            <a href="/chat" className="text-muted-foreground hover:text-foreground transition-colors">
+              Chat
             </a>
             <a href="/dashboard/projects" className="text-muted-foreground hover:text-foreground transition-colors">
               Projects

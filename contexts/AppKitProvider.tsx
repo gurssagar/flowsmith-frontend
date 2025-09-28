@@ -31,7 +31,8 @@ const modal = createAppKit({
   metadata: metadata,
   features: {
     analytics: true // Optional - defaults to your Cloud configuration
-  }
+  },
+  themeMode: 'dark'
 })
 
 function AppKitProvider({ children, cookies }: { children: ReactNode; cookies: string | null }) {
@@ -39,7 +40,9 @@ function AppKitProvider({ children, cookies }: { children: ReactNode; cookies: s
 
   return (
     <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
     </WagmiProvider>
   )
 }

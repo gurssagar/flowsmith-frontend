@@ -11,8 +11,10 @@ import {
   AlertCircle, 
   CheckCircle,
   RefreshCw,
-  Plus
+  Plus,
+  MessageSquare
 } from "lucide-react"
+import Link from "next/link"
 
 interface CreditsData {
   used: number
@@ -209,6 +211,16 @@ export function CreditsDisplay({ user }: CreditsDisplayProps) {
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
+          <Link href="/chat" className="flex-1">
+            <Button 
+              size="sm" 
+              className="w-full"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Start Chat
+            </Button>
+          </Link>
+          
           <Button 
             variant="outline" 
             size="sm" 

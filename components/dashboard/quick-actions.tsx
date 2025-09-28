@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, FileText, Zap, Settings, Play, Upload, FolderOpen, Code, BarChart3 } from "lucide-react"
+import { Plus, FileText, Zap, Settings, Play, Upload, FolderOpen, Code, BarChart3, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -8,28 +8,30 @@ interface ActionCardProps {
   title: string
   description: string
   icon: React.ReactNode
-  onClick: () => void
+  href: string
   variant?: "default" | "secondary"
 }
 
-function ActionCard({ title, description, icon, onClick, variant = "default" }: ActionCardProps) {
+function ActionCard({ title, description, icon, href, variant = "default" }: ActionCardProps) {
   const baseClasses = "w-full p-4 rounded-lg border transition-all duration-200 hover:scale-105 cursor-pointer"
   const variantClasses = variant === "default" 
     ? "bg-card/50 border-border hover:bg-card/70 hover:border-primary/50"
     : "bg-primary/10 border-primary/20 hover:bg-primary/20 hover:border-primary/40"
   
   return (
-    <div className={`${baseClasses} ${variantClasses}`} onClick={onClick}>
-      <div className="flex items-start space-x-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-foreground mb-1">{title}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
+    <Link href={href}>
+      <div className={`${baseClasses} ${variantClasses}`}>
+        <div className="flex items-start space-x-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-foreground mb-1">{title}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
@@ -39,30 +41,36 @@ export function QuickActions() {
       title: "New Contract",
       description: "Generate a smart contract from scratch",
       icon: <Plus className="h-5 w-5 text-primary" />,
-      onClick: () => console.log("New contract clicked"),
+      href: "/chat",
       variant: "secondary" as const
     },
     {
       title: "Import Contract",
       description: "Upload and analyze existing code",
       icon: <Upload className="h-5 w-5 text-primary" />,
-      onClick: () => console.log("Import contract clicked")
+      href: "/chat"
     },
     {
       title: "Deploy Contract",
       description: "Deploy to Flow testnet or mainnet",
       icon: <Play className="h-5 w-5 text-primary" />,
-      onClick: () => console.log("Deploy contract clicked")
+      href: "/chat"
     },
     {
       title: "AI Optimization",
       description: "Optimize existing contracts with AI",
       icon: <Zap className="h-5 w-5 text-primary" />,
-      onClick: () => console.log("AI optimization clicked")
+      href: "/chat"
     }
   ]
 
   const navigationActions = [
+    {
+      title: "Chat with AI",
+      description: "Start a conversation with AI assistant",
+      icon: <MessageSquare className="h-5 w-5 text-primary" />,
+      href: "/chat"
+    },
     {
       title: "Projects",
       description: "Manage your smart contract projects",
@@ -116,10 +124,12 @@ export function QuickActions() {
       </div>
       
       <div className="mt-6 pt-4 border-t border-border">
-        <Button  className="w-full" size="sm">
-          <Settings className="h-4 w-4 mr-2" />
-          Advanced Settings
-        </Button>
+        <Link href="/chat">
+          <Button className="w-full" size="sm">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Chat with AI Assistant
+          </Button>
+        </Link>
       </div>
     </div>
   )

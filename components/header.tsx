@@ -8,6 +8,7 @@ import { Menu, Wallet } from "lucide-react"
 import Link from "next/link" // Import Link for client-side navigation
 import { useAccount, useDisconnect } from "wagmi"
 import {useSession} from "next-auth/react"
+import Image from "next/image"
 export function Header() {
   const { data: session } = useSession()
 
@@ -36,8 +37,9 @@ export function Header() {
     <header className="w-full py-4 px-6">
       <div className=" mx-auto flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <span className="text-foreground text-xl font-semibold">FlowZmith</span>
+        <div className="flex items-center space-x-3">
+            <Image src="/images/flowZmithsLogo.svg" alt="FlowZmith" width={32} height={32} />
+            <span className="text-xl font-semibold text-foreground">FlowZmith</span>
           </div>
           <nav className="hidden md:flex items-center gap-2">
             {navItems.map((item) => (

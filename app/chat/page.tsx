@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import Image from "next/image"
 import {
   Bot,
   Send,
@@ -20,6 +21,7 @@ import FileTree from "@/components/FileTree"
 import TerminalComponent from "@/components/terminal"
 import { useAppStore } from "@/lib/store"
 import { db, saveFiles, loadFiles, saveChatMessage, loadChatMessages, updateFile, clearFiles } from "@/lib/db"
+import { akaveService } from "@/lib/akave"
 import JSZip from 'jszip'
 
 interface GeneratedFile {
@@ -42,6 +44,8 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isTerminalOpen, setIsTerminalOpen] = useState(false)
+  const [isAkaveEnabled, setIsAkaveEnabled] = useState(false)
+  const [akaveStatus, setAkaveStatus] = useState<'checking' | 'available' | 'unavailable'>('checking')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Use Zustand store
@@ -77,6 +81,19 @@ export default function ChatPage() {
         return
       }
 
+      // Check Akave availability
+      try {
+        setAkaveStatus('checking')
+        const isAvailable = await akaveService.checkHealth()
+        setIsAkaveEnabled(isAvailable)
+        setAkaveStatus(isAvailable ? 'available' : 'unavailable')
+        console.log('Akave service status:', isAvailable ? 'available' : 'unavailable')
+      } catch (error) {
+        console.log('Akave service not available:', error)
+        setIsAkaveEnabled(false)
+        setAkaveStatus('unavailable')
+      }
+
       try {
         const savedFiles = await loadFiles()
         const savedMessages = await loadChatMessages()
@@ -90,9 +107,9 @@ export default function ChatPage() {
         }
 
         if (messages.length === 0 && savedMessages.length > 0) {
-          const formattedMessages = savedMessages.map(msg => ({ 
-            ...msg, 
-            id: msg.id?.toString() || Date.now().toString() 
+          const formattedMessages = savedMessages.map(msg => ({
+            ...msg,
+            id: msg.id?.toString() || Date.now().toString()
           }))
           formattedMessages.forEach(msg => addMessage(msg))
         }
@@ -249,6 +266,43 @@ export default function ChatPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleSaveToAkave = async () => {
+    if (!isAkaveEnabled) {
+      alert('Akave storage is not available')
+      return
+    }
+
+    try {
+      console.log('Saving files to Akave...')
+
+      for (const file of files) {
+        await akaveService.uploadFile(
+          file.content,
+          file.path,
+          {
+            language: file.language,
+            savedAt: new Date().toISOString(),
+            source: 'manual-save'
+          }
+        )
+      }
+
+      // Show success notification
+      const notification = document.createElement('div')
+      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50'
+      notification.textContent = `☁️ All files saved to Akave storage`
+      document.body.appendChild(notification)
+
+      setTimeout(() => {
+        document.body.removeChild(notification)
+      }, 3000)
+
+    } catch (error) {
+      console.error('Error saving to Akave:', error)
+      alert('Failed to save files to Akave storage')
+    }
+  }
+
   const handleClearAll = async () => {
     clearFiles()
     clearMessages()
@@ -312,7 +366,7 @@ export default function ChatPage() {
   const extractAndSaveContracts = async (content: string, userPrompt: string) => {
     try {
       console.log('Extracting contracts from content:', content.substring(0, 200) + '...')
-      
+
       // Extract code blocks from the AI response
       const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
       const contracts: GeneratedFile[] = []
@@ -321,13 +375,13 @@ export default function ChatPage() {
       while ((match = codeBlockRegex.exec(content)) !== null) {
         const language = match[1] || 'cadence'
         const code = match[2].trim()
-        
+
         console.log(`Found code block: language=${language}, length=${code.length}`)
-        
+
         if (code.length > 50) { // Only save substantial code blocks
           // Generate filename based on content analysis
           const filename = generateFilename(code, userPrompt, language)
-          
+
           const contract: GeneratedFile = {
             id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${Math.floor(Math.random() * 10000)}`,
             path: filename,
@@ -335,7 +389,7 @@ export default function ChatPage() {
             language: language,
             isModified: true
           }
-          
+
           contracts.push(contract)
           console.log(`Added contract: ${filename}`, { id: contract.id, path: contract.path, language: contract.language })
         }
@@ -344,24 +398,46 @@ export default function ChatPage() {
       // If we found contracts, add them to the files
       if (contracts.length > 0) {
         console.log(`Found ${contracts.length} contracts to add to files`)
-        
+
         // Add each contract to the store
         contracts.forEach(contract => {
           addFile(contract)
           console.log('Added file to store:', contract.path)
         })
-        
+
         // Save to database
         saveFiles(contracts)
-        
+
+        // Upload to Akave if enabled
+        if (isAkaveEnabled) {
+          try {
+            console.log('Uploading contracts to Akave...')
+            for (const contract of contracts) {
+              await akaveService.uploadFile(
+                contract.content,
+                contract.path,
+                {
+                  language: contract.language,
+                  generatedAt: new Date().toISOString(),
+                  source: 'ai-chat'
+                }
+              )
+            }
+            console.log('Contracts uploaded to Akave successfully')
+          } catch (akaveError) {
+            console.error('Error uploading to Akave:', akaveError)
+            // Don't fail the entire process if Akave upload fails
+          }
+        }
+
         console.log(`Extracted ${contracts.length} contract(s) from AI response`)
-        
+
         // Show notification
         const notification = document.createElement('div')
         notification.className = 'fixed top-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg z-50'
-        notification.textContent = `📄 Generated ${contracts.length} contract(s) and added to editor`
+        notification.textContent = `📄 Generated ${contracts.length} contract(s)${isAkaveEnabled ? ' and uploaded to Akave' : ''} and added to editor`
         document.body.appendChild(notification)
-        
+
         // Remove notification after 3 seconds
         setTimeout(() => {
           document.body.removeChild(notification)
@@ -446,16 +522,30 @@ export default function ChatPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-                <Bot className="w-4 h-4 text-primary" />
+              <Image src="/images/flowZmithsLogo.svg" alt="FlowZmith" width={32} height={32} />
               </div>
               <div>
-                <h1 className="text-xl font-semibold">AI Code Generator</h1>
+              <div className="flex items-center space-x-3">
+            
+            <span className="text-xl font-semibold text-foreground">FlowZmith</span>
+          </div>
                 <p className="text-sm text-muted-foreground">
                   Generate and edit code with AI assistance
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* Akave Status Indicator */}
+              <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  akaveStatus === 'available' ? 'bg-green-500' :
+                  akaveStatus === 'checking' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}></div>
+                <span className="text-xs text-muted-foreground">
+                  {akaveStatus === 'available' ? 'Akave' :
+                   akaveStatus === 'checking' ? 'Checking...' : 'Akave Offline'}
+                </span>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -492,6 +582,16 @@ export default function ChatPage() {
                     <Download className="w-4 h-4 mr-2" />
                     Download All
                   </Button>
+                  {isAkaveEnabled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveToAkave}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save to Akave
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -516,7 +616,7 @@ export default function ChatPage() {
                   {messages.length === 0 ? (
                     <div className="text-center text-muted-foreground">
                       <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p className="mb-2">Welcome to AI Code Generator!</p>
+                      <p className="mb-2">Welcome to FlowZmith!</p>
                       <p className="text-sm">Describe what you want to build and I'll generate the code for you.</p>
                     </div>
                   ) : (

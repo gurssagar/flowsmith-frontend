@@ -1,6 +1,7 @@
 "use client"
 
-import { DollarSign, CreditCard, TrendingUp, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { DollarSign, CreditCard, TrendingUp, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface CostItemProps {
@@ -8,17 +9,18 @@ interface CostItemProps {
   amount: string
   usage: string
   percentage: number
+  loading?: boolean
 }
 
-function CostItem({ service, amount, usage, percentage }: CostItemProps) {
+function CostItem({ service, amount, usage, percentage, loading }: CostItemProps) {
   return (
     <div className="flex items-center justify-between p-4 bg-card/30 rounded-lg border border-border/50">
       <div className="flex-1">
         <p className="font-medium text-foreground">{service}</p>
-        <p className="text-sm text-muted-foreground">{usage}</p>
+        <p className="text-sm text-muted-foreground">{loading ? "Loading..." : usage}</p>
       </div>
       <div className="text-right">
-        <p className="font-semibold text-foreground">{amount}</p>
+        <p className="font-semibold text-foreground">{loading ? "..." : amount}</p>
         <div className="flex items-center space-x-2 mt-1">
           <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
             <div 
@@ -26,44 +28,86 @@ function CostItem({ service, amount, usage, percentage }: CostItemProps) {
               style={{ width: `${Math.min(percentage, 100)}%` }}
             />
           </div>
-          <span className="text-xs text-muted-foreground">{percentage}%</span>
+          <span className="text-xs text-muted-foreground">{loading ? "..." : `${percentage}%`}</span>
         </div>
       </div>
     </div>
   )
 }
 
+interface CostData {
+  totalCost: string
+  projectedMonthlyCost: string
+  remainingCredits: number
+  costBreakdown: {
+    apiCalls: { count: number; cost: number; percentage: number }
+    storage: { count: number; cost: number; percentage: number }
+    processing: { count: number; cost: number; percentage: number }
+  }
+  costTrend: "up" | "down" | "neutral"
+  savings: {
+    thisMonth: string
+    comparedToLastMonth: "up" | "down"
+  }
+}
+
 export function CostTracking() {
-  const costItems = [
+  const [costData, setCostData] = useState<CostData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCostData = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/dashboard/costs')
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Please log in to view cost data')
+          } else if (response.status === 404) {
+            throw new Error('User not found. Please try logging in again')
+          } else {
+            throw new Error(`Failed to fetch cost data (${response.status})`)
+          }
+        }
+        
+        const data = await response.json()
+        setCostData(data)
+      } catch (err) {
+        console.error('Error fetching cost data:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load cost data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCostData()
+  }, [])
+
+  const costItems = costData ? [
     {
-      service: "AI Model Usage",
-      amount: "$47.32",
-      usage: "1.2M tokens",
-      percentage: 78
-    },
-    {
-      service: "API Requests",
-      amount: "$12.45",
-      usage: "2,847 calls",
-      percentage: 45
+      service: "API Calls",
+      amount: `$${costData.costBreakdown.apiCalls.cost.toFixed(4)}`,
+      usage: `${costData.costBreakdown.apiCalls.count} calls`,
+      percentage: costData.costBreakdown.apiCalls.percentage
     },
     {
       service: "Storage",
-      amount: "$3.20",
-      usage: "2.1 GB",
-      percentage: 15
+      amount: `$${costData.costBreakdown.storage.cost.toFixed(4)}`,
+      usage: `${costData.costBreakdown.storage.count} MB`,
+      percentage: costData.costBreakdown.storage.percentage
     },
     {
-      service: "Deployments",
-      amount: "$8.90",
-      usage: "12 deployments",
-      percentage: 32
+      service: "Processing",
+      amount: `$${costData.costBreakdown.processing.cost.toFixed(4)}`,
+      usage: `${costData.costBreakdown.processing.count} units`,
+      percentage: costData.costBreakdown.processing.percentage
     }
-  ]
+  ] : []
 
-  const totalCost = "$71.87"
-  const monthlyBudget = "$200.00"
-  const remainingBudget = "$128.13"
+  const budgetUsage = costData ? 
+    Math.round((parseFloat(costData.totalCost) / 200) * 100) : 0
 
   return (
     <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-6">
@@ -78,6 +122,18 @@ export function CostTracking() {
         </Button>
       </div>
 
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
+          <p className="text-red-400 text-sm mb-2">Failed to load cost data: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-sm text-red-400 hover:text-red-300 underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Budget Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-primary/10 rounded-lg p-4">
@@ -85,23 +141,29 @@ export function CostTracking() {
             <DollarSign className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-foreground">Total Spent</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{totalCost}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : `$${costData?.totalCost || "0.0000"}`}
+          </p>
         </div>
         
         <div className="bg-muted/50 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-2">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Monthly Budget</span>
+            <span className="text-sm font-medium text-foreground">Projected Monthly</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{monthlyBudget}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : `$${costData?.projectedMonthlyCost || "0.0000"}`}
+          </p>
         </div>
         
         <div className="bg-green-500/10 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-2">
             <AlertCircle className="h-4 w-4 text-green-500" />
-            <span className="text-sm font-medium text-foreground">Remaining</span>
+            <span className="text-sm font-medium text-foreground">Remaining Credits</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{remainingBudget}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : costData?.remainingCredits || 0}
+          </p>
         </div>
       </div>
 
@@ -109,7 +171,7 @@ export function CostTracking() {
       <div className="space-y-3">
         <h3 className="font-medium text-foreground mb-3">Cost Breakdown</h3>
         {costItems.map((item, index) => (
-          <CostItem key={index} {...item} />
+          <CostItem key={index} {...item} loading={loading} />
         ))}
       </div>
 
@@ -117,10 +179,15 @@ export function CostTracking() {
       <div className="mt-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-foreground">Budget Usage</span>
-          <span className="text-sm text-muted-foreground">36% used</span>
+          <span className="text-sm text-muted-foreground">
+            {loading ? "..." : `${budgetUsage}% used`}
+          </span>
         </div>
         <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-primary to-primary-dark transition-all duration-500" style={{ width: "36%" }} />
+          <div 
+            className="h-full bg-gradient-to-r from-primary to-primary-dark transition-all duration-500" 
+            style={{ width: `${budgetUsage}%` }} 
+          />
         </div>
       </div>
     </div>

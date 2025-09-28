@@ -227,7 +227,7 @@ export default function PlansPage() {
                     className={`w-full ${
                       plan.popular
                         ? 'bg-primary hover:bg-primary/90'
-                        : 'bg-secondary hover:bg-secondary/90'
+                        : 'bg-primary hover:bg-primary/90'
                     }`}
                     size="lg"
                   >

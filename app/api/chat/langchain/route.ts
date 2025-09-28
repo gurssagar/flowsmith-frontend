@@ -1,6 +1,4 @@
 import { streamText } from 'ai';
-import { createStreamableValue } from 'ai/rsc';
-import { StreamingTextResponse, Message } from 'ai';
 
 export const maxDuration = 30;
 
@@ -10,59 +8,48 @@ export async function POST(req: Request) {
 
     // Simulate LangChain streaming response for demo purposes
     // In a real implementation, you would integrate with actual LangChain
-    const stream = createStreamableValue('');
+    const systemPrompt = `You are a LangChain-powered AI assistant specializing in Flow blockchain and Cadence smart contracts. 
+    
+    IMPORTANT: Always generate complete, production-ready Cadence smart contract code with:
+    - Proper contract structure with pub fun init()
+    - Resource definitions with proper interfaces
+    - Access control (pub, access(all), etc.)
+    - Error handling with pre and post conditions
+    - Comments explaining key functionality
+    - Proper import statements
 
-    // Mock streaming response
-    const responseText = `I'm processing your request through a LangChain stream...
+    Always respond with:
+    1. A clear explanation of what the contract does
+    2. The complete Cadence code in a code block with \`\`\`cadence syntax
+    3. Any deployment considerations or usage examples
 
-Here's a sample Cadence smart contract that demonstrates the concept:
+    Focus on:
+    - NFT contracts (NonFungibleToken standard)
+    - Fungible Token contracts (FungibleToken standard)
+    - Marketplace contracts
+    - Staking contracts
+    - DAO contracts
+    - Simple utility contracts
 
-\`\`\`cadence
-pub contract ExampleContract {
+    Never generate incomplete code snippets. Always provide full, deployable contracts.`;
 
-    pub var totalSupply: UInt64
+    // Add system message if not present
+    const enhancedMessages = messages[0]?.role === 'system'
+      ? messages
+      : [{ role: 'system', content: systemPrompt }, ...messages];
 
-    pub resource NFT {
-        pub let id: UInt64
+    const result = await streamText({
+      model: {
+        provider: 'openai',
+        model: 'gpt-3.5-turbo',
+        apiKey: process.env.OPENAI_API_KEY || 'demo-key'
+      },
+      system: systemPrompt,
+      messages: enhancedMessages,
+      temperature: 0.7,
+    });
 
-        init(id: UInt64) {
-            self.id = id
-            ExampleContract.totalSupply = ExampleContract.totalSupply + 1
-        }
-
-        destroy() {
-            ExampleContract.totalSupply = ExampleContract.totalSupply - 1
-        }
-    }
-
-    pub fun createNFT(): @NFT {
-        return <- create NFT(id: ExampleContract.totalSupply + 1)
-    }
-
-    init() {
-        self.totalSupply = 0
-    }
-}
-\`\`\`
-
-This contract demonstrates basic resource management in Cadence with proper initialization and destruction patterns.`;
-
-    // Simulate streaming by sending chunks
-    let currentIndex = 0;
-    const chunkSize = 10;
-
-    const streamInterval = setInterval(() => {
-      if (currentIndex < responseText.length) {
-        const chunk = responseText.substring(currentIndex, currentIndex + chunkSize);
-        stream.update(chunk);
-        currentIndex += chunkSize;
-      } else {
-        stream.done();
-        clearInterval(streamInterval);
-      }
-    }, 50);
-
-    return new StreamingTextResponse(stream.value);
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('LangChain API error:', error);
     return new Response(

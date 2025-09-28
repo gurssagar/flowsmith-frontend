@@ -166,4 +166,83 @@
   .gradient-scrollbar::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, hsl(240 2% 35%), hsl(240 2% 45%)); /* Slightly lighter dark gradient */
   }
+
+  /* AppKit Button Styling - More Specific Targeting */
+  appkit-button,
+  appkit-button *,
+  appkit-button::part(button),
+  appkit-button w3m-button,
+  appkit-button w3m-button * {
+    --w3m-accent: hsl(165 96% 71%) !important; /* Primary color from theme */
+    --w3m-accent-foreground: hsl(160 8% 6%) !important; /* Primary foreground */
+    --w3m-background: hsl(210 11% 7%) !important; /* Background color */
+    --w3m-foreground: hsl(160 14% 93%) !important; /* Foreground color */
+    --w3m-border-radius: 0.5rem !important; /* Match theme border radius */
+  }
+
+  /* Target the actual button element inside appkit-button */
+  appkit-button w3m-button {
+    background-color: hsl(165 96% 71%) !important;
+    color: hsl(160 8% 6%) !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* AppKit Button Hover States */
+  appkit-button:hover,
+  appkit-button:hover w3m-button {
+    --w3m-accent: hsl(160 100% 50%) !important; /* Primary dark on hover */
+    background-color: hsl(160 100% 50%) !important;
+  }
+
+  /* AppKit Button Focus States */
+  appkit-button:focus,
+  appkit-button:focus w3m-button {
+    --w3m-accent: hsl(165 96% 71%) !important;
+    background-color: hsl(165 96% 71%) !important;
+    outline: 2px solid hsl(165 96% 71%) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Additional targeting for Web3Modal components */
+  w3m-button,
+  w3m-button * {
+    background-color: hsl(165 96% 71%) !important;
+    color: hsl(160 8% 6%) !important;
+    border-radius: 0.5rem !important;
+  }
+
+  w3m-button:hover {
+    background-color: hsl(160 100% 50%) !important;
+  }
+
+  /* Target all possible AppKit button selectors */
+  appkit-button button,
+  appkit-button [role="button"],
+  appkit-button .w3m-button,
+  appkit-button .w3m-button *,
+  appkit-button w3m-button,
+  appkit-button w3m-button * {
+    background-color: hsl(165 96% 71%) !important;
+    color: hsl(160 8% 6%) !important;
+    border-radius: 0.5rem !important;
+    border: none !important;
+  }
+
+  appkit-button button:hover,
+  appkit-button [role="button"]:hover,
+  appkit-button .w3m-button:hover,
+  appkit-button w3m-button:hover {
+    background-color: hsl(160 100% 50%) !important;
+  }
+
+  /* Target the shadow DOM if possible */
+  appkit-button::part(button) {
+    background-color: hsl(165 96% 71%) !important;
+    color: hsl(160 8% 6%) !important;
+    border-radius: 0.5rem !important;
+  }
+
+  appkit-button::part(button):hover {
+    background-color: hsl(160 100% 50%) !important;
+  }
 }

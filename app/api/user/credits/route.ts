@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     const plan = await userPlanQueries.getCurrentPlan(user.id)
     
     // Calculate remaining credits
-    const remainingCredits = Math.max(0, user.requestsLimit - user.requestsUsed)
-    const isNewUser = user.requestsUsed === 0 && user.requestsLimit === 10
+    const remainingCredits = Math.max(0, (user.requestsLimit || 0) - (user.requestsUsed || 0))
+    const isNewUser = (user.requestsUsed || 0) === 0 && (user.requestsLimit || 0) === 10
 
     return NextResponse.json({
       success: true,
@@ -77,19 +77,19 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'use_credit':
         // Use a credit (increment requestsUsed)
-        if (user.requestsUsed >= user.requestsLimit) {
+        if ((user.requestsUsed || 0) >= (user.requestsLimit || 0)) {
           return NextResponse.json({ 
             error: 'No credits remaining',
             credits: {
-              used: user.requestsUsed,
-              limit: user.requestsLimit,
+              used: user.requestsUsed || 0,
+              limit: user.requestsLimit || 0,
               remaining: 0
             }
           }, { status: 400 })
         }
 
         updatedUser = await userQueries.update(user.id, {
-          requestsUsed: user.requestsUsed + 1
+          requestsUsed: (user.requestsUsed || 0) + 1
         })
         break
 
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         }
 
         updatedUser = await userQueries.update(user.id, {
-          requestsLimit: user.requestsLimit + amount
+          requestsLimit: (user.requestsLimit || 0) + amount
         })
         break
 
@@ -119,14 +119,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    const remainingCredits = Math.max(0, updatedUser.requestsLimit - updatedUser.requestsUsed)
+    const remainingCredits = Math.max(0, (updatedUser.requestsLimit || 0) - (updatedUser.requestsUsed || 0))
 
     return NextResponse.json({
       success: true,
       message: `Credits ${action} successful`,
       credits: {
-        used: updatedUser.requestsUsed,
-        limit: updatedUser.requestsLimit,
+        used: updatedUser.requestsUsed || 0,
+        limit: updatedUser.requestsLimit || 0,
         remaining: remainingCredits,
         canMakeRequest: remainingCredits > 0
       }
